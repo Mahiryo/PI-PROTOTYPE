@@ -1,0 +1,227 @@
+   <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>particle_box_AGAIN_FR_FR_THIS_THE_ONE</title>
+</head>
+<body>
+    <div id="INFO">
+        <input  id="intensity" type="number" step="0.1">
+        <input  id="For_X" type="number" step="2" placeholder="20">
+        <input  id="For_Y" type="number" step="2" placeholder="10">
+        <p id="PPM_sensor">PARTICULAS DETECTADAS: </p>
+        <p id="PPM_room">PARTICULAS TOTAL: </p>
+        <p id="PPM_velocity">VELOCIDADE DE VAZAMENTO: </p>
+
+        <br>
+        
+        <p id="time">  SE PASSARAM:      </p>
+        <button onclick="START()">START SHIT</button>
+    </div>
+
+    <canvas id="particle_canvas"></canvas>
+
+</body>
+</html>
+<style>
+    html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    background-color: white;
+    user-select: none;
+    color: black;
+}
+#particle_canvas{
+    position: absolute;
+    height: 75%;
+    width: 75%;
+    display: flex;
+    background-color: black;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+#info{
+    background-color: white;
+    color: black;
+}
+
+</style>
+<script>
+
+var canvas = document.getElementById("particle_canvas");// the canvas where the amgic happens
+var ctx = canvas.getContext("2d"); // context to allow us to use the canvas
+var particles = []; // aray to store the particles drawn
+var speeds = []; // array to store all the speeds generated tru the code and give a more acurate final value
+var lastTime = 0; // makes the steps happen
+
+var sensor_PPM = document.getElementById("PPM_sensor"); // element to show that max of what a real sensor will do || ALL OTHER DATA USES THIS AND ITS LIMITS SO THERE IS NO CHEATING IN THE SIMULATION
+var room_PPM = document.getElementById("PPM_room");// element to show total particles kinda
+var speed_PPM = document.getElementById("PPM_velocity"); // element to show velocity of leak in ppm/seconds
+var mouse_x = document.getElementById('mouse_x'); // element to show mouse pos when above canvas
+var mouse_y = document.getElementById('mouse_y'); // element to show mouse pos when above canvas
+var TIME = document.getElementById("time"); // element to display time
+var intensity = document.getElementById("intensity"); // to select the range of particles spawned per frame
+
+var numberOfElements = 0; // a total os all particles drawn by this code
+
+var sensed_elements = 0; //the now value of the bellow this
+var sensed_elements_y = 0; //before value to calc the speed of the leak
+
+var mili = 0; //time in miliseconds increases bt 50 miliseconds per step
+
+var start = false; // to allow button an start all
+
+function START() // makes the process begin on button
+{   
+    if(For_X.valueAsNumber != 0 && For_Y.valueAsNumber != 0&& intensity.valueAsNumber != 0) // check if things were placed
+    {    
+        requestAnimationFrame(animate);
+        setInterval(UPDATE_INFO, 50);
+    }
+}
+function UPDATE_INFO() // updates the info bar at a a nom absurd rate
+{
+    mili += 0.05; //updates time passed by the rate of this function
+    numberOfElements = particles.length; // returns the number of elemenrs generate into the particles array
+    TIME.innerHTML = `SE PASSARAM: ${mili} segundos`; // updates time element with the mili value
+    sensed_elements = numberOfElements; // simulates the sensor with its limited range
+    sensed_elements = clamp(sensed_elements, 0, 400); // caps the value that the sensor is capable
+    if( sensed_elements < 400)
+    {    
+        speeds.push(new Number(sensed_elements - sensed_elements_y) / 0.05); //maths the speed and puts it into an array
+        speed_PPM.innerHTML = (`VELOCIDADE DE VAZAMENTO: ${Math.round(media_array()) } parts per second`); // updates the speed by taking the avg of the speed array
+    }
+    sensor_PPM.innerHTML = (`PARTICULAS DETECTADAS: ${sensed_elements}`); //sensor info UI
+    room_PPM.innerHTML = (`PARTICULAS TOTAL: ${numberOfElements}`); // real value of generated particles 
+    sensed_elements_y = sensed_elements; // value to compare for speed
+}
+class Particle // particle class and the behaviour expect of then
+{
+    constructor(x, y, radius, color) // what makes then 
+    {
+        this.x = 0; // x/y mean the position of canvas they spawn
+        this.y = 75; // x/y mean the position of canvas they spawn
+        this.vx = 0; // velocity value carried on x axis
+        this.vy = 0; // velocity value carried on y axis
+        this.mass = 0.01; // mass of the particle -- not realy useful as we are testing air particles
+        this.radius = radius; // 
+        this.color = color;
+        this.fx = For_X.valueAsNumber;
+        this.fy = (Math.random() -0.5) * For_Y.valueAsNumber;
+    }
+
+    applyForce(fx, fy) {
+        this.fx += fx;
+        this.fy += fy;
+    }
+
+    update(deltaTime) {
+
+        var ax = (Math.random() - 0.1) * this.fx / this.mass;
+        var ay = (Math.random() - 0.5) * this.fy / this.mass;
+
+
+        this.vx += ax * deltaTime;
+        this.vy += ay * deltaTime;
+
+
+        this.x += this.vx * deltaTime;
+        this.y += this.vy * deltaTime;
+
+
+        this.fx = 0;
+        this.fy = 0;
+    }
+
+    draw(ctx) {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.closePath();
+    }
+}
+function animate(currentTime) {
+    
+    var deltaTime = (currentTime - lastTime) / 1000;
+    lastTime = currentTime;
+    if (currentTime <= 19500)
+        {    
+        for (var i = 0; i < ((Math.random() * intensity.valueAsNumber) + intensity.valueAsNumber/2); i++) 
+            {
+                var randon_color = Math.round(Math.random() * 2);
+                var color = '';
+                switch (randon_color){
+                        case 0:
+                            color = `#00ffff`;
+                        break;
+
+                        case 1:
+                            color = `#baf5f5`;
+                        break;
+
+                        case 2:
+                            color = `#105e5d`;
+                        break;
+                };
+                particles.push(new Particle(
+                    Math.random() * canvas.width,
+                    Math.random() * canvas.height,
+                    0.25,
+                    color
+                ));
+            }
+        }
+        if (currentTime <20000)
+        {
+            if (currentTime > 19500){
+                alert(`${mili}`);
+            }
+        }
+    if (currentTime <= 500000)
+    {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+            if (this.vx > 0)
+            {
+                p.applyForce((Math.random() - 0.5) * (-0.05), 0.025 * p.mass);
+            }
+            if (this.vx < 0)
+            {
+                p.applyForce((Math.random() - 0.5) * (0.05), 0.025 * p.mass);
+            }
+            p.update(deltaTime);
+
+
+            if (p.x + p.radius > canvas.width || p.x - p.radius < 0) {
+                p.vx *= -1;
+                // p.x = Math.max(p.radius, Math.min(canvas.width - p.radius, p.x));
+            }
+            if (p.y + p.radius > canvas.height || p.y - p.radius < 0) {
+                p.vy *= -1;
+                // p.y = Math.max(p.radius, Math.min(canvas.height - p.radius, p.y));
+            }
+
+            p.draw(ctx);
+        });
+    }
+    requestAnimationFrame(animate);
+}
+function clamp(val, min, max) {
+    return val > max ? max : val < min ? min : val;
+}
+function media_array()
+{
+    var sum = 0;
+    for (var i = 0; i < speeds.length; i++) 
+    {
+        sum += speeds[i];
+    }
+    return sum / speeds.length;
+
+}
+</script>
